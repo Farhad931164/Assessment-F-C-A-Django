@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% block title %}<title>The Library</title>{% endblock %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row justify-content-center align-self-center">
+      <p class="lead">
+        Hello, <b> {{user}} </b> <a href="{% url 'logout' %}" class="">(Logout)</a>
+      </p>
+    </div>
+    <div class="row">
+      <div class="col-md-2 bg-light">
+      {% block sidebar %}
+        <ul class="sidebar-nav">
+          <a href="{% url 'index' %}" class="btn m-1 btn-primary w-100 p-3 mx-auto">Home</a>
+          <a href="{% url 'books' %}" class="btn m-1 btn-primary w-100 p-3 mx-auto">All books</a>
+          <a href="{% url 'books_search' %}" class="btn m-1 btn-primary w-100 p-3 mx-auto">Search library</a>          
+          <a href="{% url 'filldb' %}" class="btn m-1 btn-warning w-100 p-3 mx-auto">Reset database</a>          
+        </ul>
+      {% endblock %}
+
+      </div>
+      <div class="col-sm-10 ">
+        {% block content %}{% endblock %}
+        {% block pagination %}
+          {% if is_paginated %}
+              <div class="pagination">
+                  <span class="page-links">
+                      {% if page_obj.has_previous %}
+                          <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}">previous</a>
+                      {% endif %}
+                      <span class="page-current">
+                          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                      </span>
+                      {% if page_obj.has_next %}
+                          <a href="{{ request.path }}?page={{ page_obj.next_page_number }}">next</a>
+                      {% endif %}
+                  </span>
+              </div>
+          {% endif %}
+        {% endblock %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

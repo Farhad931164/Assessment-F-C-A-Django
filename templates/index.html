@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Welcome to Stratford library</h1>
+  <p>A Local Library, a website developed by <em>some local folks</em>!</p>
+  <p>The library has the following record counts:</p>
+  <ul>
+    <li><strong>Registered books:</strong> {{ num_books }}</li>
+    <li><strong>Copies:</strong> {{ all_books }}</li>
+    <li><strong>Available to rent :</strong> {{ total_available }}</li>
+  </ul>
+{% endblock %}
