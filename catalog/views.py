@@ -12,7 +12,7 @@ import django.contrib.auth
 from django.contrib.auth.models import User
 
 
-from .models import Book, Availability, Wishlist
+from .models import Book, Availability, Wishlist, Borrows
 from .forms import BookSearch
 
 
@@ -31,6 +31,7 @@ def index(request):
         "all_books": all_books,
         "total_available": total_available,
     }
+
     return render(request, "index.html", context=context)
 
 
@@ -39,26 +40,36 @@ class BookListView(generic.ListView):
     template_name = "book_list.html"
 
     def get_queryset(self):
+        # generic query to return all books or by search term
         title = self.request.GET.get("title")
         author = self.request.GET.get("author")
+        search_type = self.request.GET.get("search_type")
+
+        filter_type = Q.AND if search_type == "1" else Q.OR
+
         filters = Q()
-        
+
         if title:
-            filters &= Q(title__contains=title)
+            filters.add(Q(title__contains=title), filter_type)
 
         if author:
-            filters &= Q(authors__contains=author)
+            filters.add(Q(authors__contains=author), filter_type)
 
         return Book.objects.all().filter(filters)
 
 
 def books_search(request):
+    # this both provides the book search form and also redirect for actual search
     must_redirect = ("author" in request.GET.keys()) or ("title" in request.GET.keys())
     author = request.GET.get("author", "")
     title = request.GET.get("title", "")
+    search_type = request.GET.get("search_type")
 
     if must_redirect:
-        return redirect(reverse("books") + f"?author={author}&title={title}")
+        return redirect(
+            reverse("books")
+            + f"?author={author}&title={title}&search_type={search_type}"
+        )
 
     context = {"form": BookSearch()}
     return render(request, "book_search.html", context=context)
@@ -91,21 +102,45 @@ def filldb(request):
         Availability.objects.create(
             book=book, total_copies=total_copies, available_copies=available_copies
         )
-        
+
     return redirect(index)
 
 
 @require_http_methods(["GET", "POST"])
 def wishlist(request, book_id):
+    # here if record exists, we just remove it, like toggeling
+    # The standard way is to have a POST and DELETE but I didn't want to write AJAX and html doesn't support DELETE for forms
     user = django.contrib.auth.get_user(request)
     book = Book.objects.get(book_id=book_id)
-    Wishlist.objects.create(user = user, book = book)
-    return redirect('books')
+
+    wobj = Wishlist.objects.filter(user=user, book=book)
+
+    if wobj:
+        wobj.delete()
+    else:
+        Wishlist.objects.create(user=user, book=book)
+
+    return redirect("books")
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST", "DELETE"])
 def borrow(request, book_id):
-    return redirect('books')
+    if request.method == "POST":
+        user = django.contrib.auth.get_user(request)
+        book = Book.objects.get(book_id=book_id)
+
+        if book.availability.available_copies > 0:  # if a book is available to be lend
+            if (
+                not book.borrowed_by.all().filter(user=user.id).exists()
+            ):  # if user has not borrowed the same book before
+                aobj = Availability.objects.get(book=book)
+                aobj.available_copies -= 1
+                aobj.save()
+
+                Borrows.objects.create(book=book, user=user)
+
+    return redirect("books")
+
 
 def logout(request):
     django.contrib.auth.logout(request)

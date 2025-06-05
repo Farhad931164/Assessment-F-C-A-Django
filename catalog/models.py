@@ -19,7 +19,7 @@ class Book(models.Model):
     language = models.CharField(max_length=50)
 
     def __str__(self):
-        return f"{self.title} by {self.authors} ({self.publication_year})"
+        return f"{self.title} by {self.authors} ({self.publication_year}), Book ID: {self.book_id}"
 
     class Meta:
         verbose_name = "Book"
@@ -51,6 +51,22 @@ class Availability(models.Model):
     class Meta:
         verbose_name = "Book Availability"
         verbose_name_plural = "Book Availabilities"
+
+
+class Borrows(models.Model):
+    pk = models.CompositePrimaryKey("user_id", "book_id")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,  # Delet Cascade
+        related_name="borrowed_items",  # user.wishlist_items.all()
+    )
+    book = models.ForeignKey(
+        Book,
+        on_delete=models.CASCADE,  # Cascade if a book is deleted from table
+        related_name="borrowed_by",  # book.wishlisted_by.all()
+    )
+    created = models.DateTimeField(auto_now_add=True)
+    returned = models.DateTimeField(default=None, blank=True, null=True)
 
 
 class Wishlist(models.Model):

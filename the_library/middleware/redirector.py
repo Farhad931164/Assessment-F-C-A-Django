@@ -15,7 +15,6 @@ class RedirectUnauthenticatedMiddleware:
         ]
 
     def __call__(self, request):
-        print(request.path)
         if not request.user.is_authenticated:
             is_public_url = any(request.path == url for url in self.public_urls)
             is_public_prefix = any(request.path.startswith(prefix) for prefix in self.public_url_prefixes)
