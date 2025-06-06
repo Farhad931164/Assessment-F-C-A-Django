@@ -26,7 +26,6 @@ class Book(models.Model):
         verbose_name_plural = "Books"
         ordering = ["title"]
 
-
 #  you can add book availability to book table but this is more normalized and also it is future proof
 #  so if you want to add shelf number, row number etc later
 class Availability(models.Model):

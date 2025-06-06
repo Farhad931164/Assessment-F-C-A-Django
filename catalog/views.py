@@ -3,7 +3,7 @@ import random
 import pandas as pd
 from django.shortcuts import render
 from django.views import generic
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count, ExpressionWrapper, DurationField, Avg, F
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.http import HttpResponse
@@ -26,10 +26,33 @@ def index(request):
         Sum("available_copies", default=0)
     )["available_copies__sum"]
 
+    total_with_customer = Borrows.objects.aggregate(Count("book"))["book__count"]
+
+    completed_borrowings = Borrows.objects.filter(returned__isnull=False)
+    borrowings_with_duration = completed_borrowings.annotate(
+        duration=ExpressionWrapper(
+            F("returned") - F("created"), output_field=DurationField()
+        )
+    )
+    avg_duration_result = borrowings_with_duration.aggregate(
+        average_lending_duration=Avg("duration")
+    )
+    average_time = avg_duration_result.get("average_lending_duration")
+
+    average_time_display = "N/A"
+    if average_time:
+        total_seconds = average_time.total_seconds()
+        days = average_time.days
+        hours = int(total_seconds // 3600) % 24
+        minutes = int(total_seconds // 60) % 60
+        average_time_display = f"{days} days, {hours} hours, {minutes} minutes"
+
     context = {
         "num_books": num_books,
         "all_books": all_books,
         "total_available": total_available,
+        "total_with_customer": total_with_customer,
+        "average_lending": average_time_display,
     }
 
     return render(request, "index.html", context=context)
@@ -41,6 +64,7 @@ class BookListView(generic.ListView):
 
     def get_queryset(self):
         # generic query to return all books or by search term
+        user = django.contrib.auth.get_user(self.request)
         title = self.request.GET.get("title")
         author = self.request.GET.get("author")
         search_type = self.request.GET.get("search_type")
@@ -55,9 +79,15 @@ class BookListView(generic.ListView):
         if author:
             filters.add(Q(authors__contains=author), filter_type)
 
-        return Book.objects.all().filter(filters)
+        qset = Book.objects.all().filter(filters)
+        for book in qset:
+            book.is_wishlisted = book.wishlisted_by.filter(user=user).exists()
+            book.is_borrowed = book.borrowed_by.filter(user=user).exists()
+
+        return qset
 
 
+@require_http_methods(["GET"])
 def books_search(request):
     # this both provides the book search form and also redirect for actual search
     must_redirect = ("author" in request.GET.keys()) or ("title" in request.GET.keys())

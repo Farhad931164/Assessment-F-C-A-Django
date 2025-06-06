@@ -11,6 +11,7 @@ This is a simple library web application built with Django. Having previously us
   - [Tech Stack](#tech-stack)
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Tests](#tests)
 
 
 ## Features
@@ -63,3 +64,10 @@ The standard django admin panel login comes up. You have two user available to l
   2. username: `admin` and password `admin`
 
 Once you log in, you'll be taken directly to the main page of the library application. While it's functional enough to explore, please understand that it's a work in progress and I ran out of time to fully complete it. Regarding the API, it generally follows standard practices, but there are a few instances where I had to make compromises, especially since standard HTML forms don't directly support the DELETE method on form submit.
+
+## Tests
+Unit tests have been implemented here for demonstration. Since this is not a production codebase, the testing primarily serves to showcase how unit testing can be achieved with Django's standard libraries. To execute these tests, use the following command:
+
+    ```bash
+    uv run python manage.py runserver
+    ```

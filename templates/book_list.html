@@ -31,12 +31,15 @@
           <td>{{book.availability.total_copies}}</td>
           <td>
               {% if book.availability.available_copies > 0 %}
-                <form action={% url 'borrow' book.book_id %} method="post">   
-                  {% csrf_token %}                             
-                  <button type="input" class="btn btn-success">Borrow</button>
-                </form>
+                {% if book.is_borrowed %}
+                {% else %}
+                  <form action={% url 'borrow' book.book_id %} method="post">   
+                    {% csrf_token %}                             
+                    <button type="input" class="btn btn-success">Borrow</button>
+                  </form>
+                {% endif %}
               {% else %}
-                {% if book.wishlisted_by.all.filter %}
+                {% if book.is_wishlisted %}
                   <form action={% url 'wishlist' book.book_id%} method="get">                       
                     {% csrf_token %}                  
                     <button type="input" class="btn btn-primary">Remove from wishlist</button>
